@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="root" tests="4" failures="1" errors="1" skipped="1">
+  <testsuite name="UserRepository" tests="4" failures="1" errors="1" skipped="1" time="1.482">
+    <testcase classname="test/UserRepository.test.ts" name="creates a user" time="0.512" />
+    <testcase classname="test/UserRepository.test.ts" name="rejects a duplicate email" time="0.203">
+      <failure message="expected 409 but got 200">AssertionError: expected 409 but got 200
+        at Object.&lt;anonymous&gt; (test/UserRepository.test.ts:42:10)</failure>
+    </testcase>
+    <testcase classname="test/UserRepository.test.ts" name="times out on a slow connection" time="5.001">
+      <error message="connect ETIMEDOUT">Error: connect ETIMEDOUT 127.0.0.1:5432
+        at TCPConnectWrap.afterConnect (net.js:1146:16)</error>
+    </testcase>
+    <testcase classname="test/UserRepository.test.ts" name="soft-deletes a user" time="0">
+      <skipped />
+    </testcase>
+  </testsuite>
+</testsuites>

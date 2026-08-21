@@ -1,0 +1,105 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// `repo` (owner/name) scopes a test to the GitHub repository it came from. The spec's
+// data model doesn't list this field, but without it two ingested repos with identically
+// named tests or jobs (e.g. every repo has a "lint" job) would collide on the same row.
+model Test {
+  id          String    @id @default(cuid())
+  repo        String
+  suite       String
+  name        String
+  filePath    String?
+  firstSeenAt DateTime  @default(now())
+  runs        TestRun[]
+  scores      FlakinessScore[]
+  quarantineEvents QuarantineEvent[]
+
+  @@unique([repo, suite, name])
+  @@index([repo])
+}
+
+enum TestRunStatus {
+  PASSED
+  FAILED
+  ERRORED
+  SKIPPED
+}
+
+model TestRun {
+  id            String        @id @default(cuid())
+  test          Test          @relation(fields: [testId], references: [id])
+  testId        String
+  // GitHub Actions run/job ids: large numeric ids, stored as BigInt to avoid precision loss.
+  workflowRunId BigInt
+  jobId         BigInt
+  commitSha     String
+  branch        String
+  status        TestRunStatus
+  durationMs    Int?
+  errorMessage  String?
+  startedAt     DateTime
+  runnerOs      String?
+  isRetry       Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+
+  // One row per (test, run, job): re-ingesting the same run/job is a no-op upsert, which
+  // is what makes ingestion idempotent.
+  @@unique([testId, workflowRunId, jobId])
+  @@index([testId, startedAt])
+  @@index([workflowRunId])
+}
+
+enum IngestionMode {
+  JUNIT_XML
+  JOB_LEVEL
+}
+
+model IngestionCursor {
+  repo          String         @id
+  lastRunIdSeen BigInt?
+  lastSyncedAt  DateTime?
+  ingestionMode IngestionMode?
+}
+
+enum FlakinessStatus {
+  STABLE
+  FLAGGED
+  QUARANTINED
+}
+
+// One row per recompute, per test — a append-only history of flakiness scores over time,
+// not just the latest value, so the dashboard can chart a test's trend (Sprint 4).
+model FlakinessScore {
+  id              String          @id @default(cuid())
+  test            Test            @relation(fields: [testId], references: [id])
+  testId          String
+  windowStart     DateTime
+  windowEnd       DateTime
+  flipRate        Float
+  confidenceScore Float
+  status          FlakinessStatus
+  computedAt      DateTime        @default(now())
+
+  @@index([testId, computedAt])
+}
+
+// Append-only log of quarantine state transitions. Current status for a test is derived as
+// "the transitionedTo of its latest event, or STABLE if it has none" rather than stored
+// redundantly on Test — this log is the single source of truth for quarantine state.
+model QuarantineEvent {
+  id             String          @id @default(cuid())
+  test           Test            @relation(fields: [testId], references: [id])
+  testId         String
+  transitionedTo FlakinessStatus
+  reason         String
+  occurredAt     DateTime        @default(now())
+
+  @@index([testId, occurredAt])
+}
