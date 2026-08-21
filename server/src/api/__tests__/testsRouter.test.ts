@@ -82,9 +82,7 @@ describe('GET /api/tests/:id', () => {
 
   it('returns the full test detail', async () => {
     const { app } = buildApp();
-    const res = await request(app)
-      .get('/api/tests/test-1')
-      .set('Authorization', `Bearer ${TOKEN}`);
+    const res = await request(app).get('/api/tests/test-1').set('Authorization', `Bearer ${TOKEN}`);
 
     expect(res.status).toBe(200);
     expect(res.body.id).toBe('test-1');

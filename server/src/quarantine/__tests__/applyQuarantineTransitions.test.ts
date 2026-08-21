@@ -75,7 +75,10 @@ describe('applyQuarantineTransitions', () => {
 
     expect(summary).toEqual({ testsEvaluated: 1, transitions: 1 });
     expect(store.events).toEqual([
-      { toStatus: 'QUARANTINED', reason: 'flakiness detection classified this test as QUARANTINED' },
+      {
+        toStatus: 'QUARANTINED',
+        reason: 'flakiness detection classified this test as QUARANTINED',
+      },
     ]);
     expect(notifier.calls).toHaveLength(1);
   });

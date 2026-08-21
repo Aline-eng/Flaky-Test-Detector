@@ -13,8 +13,8 @@ manual cleanup chore. The detection engine (ADR 0001) already produces a fresh
 would be to just let a test flow back out of quarantine the moment its Wilson-lower-bound
 confidence score dips back under the quarantine threshold.
 
-That's the wrong mechanism specifically for *demotion*, even though it's the right mechanism
-for *promotion into* quarantine. The confidence score is computed over a sliding window, so
+That's the wrong mechanism specifically for _demotion_, even though it's the right mechanism
+for _promotion into_ quarantine. The confidence score is computed over a sliding window, so
 right after a test starts passing consistently, the window still contains its recent flaky
 history — the score falls gradually, not immediately, and can wobble back above the threshold
 on a single subsequent failure. Using the same score for both directions would let a test
@@ -25,7 +25,7 @@ quarantine (a merge-blocking test that flickers stable/quarantined/stable is exa
 ## Decision
 
 Demotion out of quarantine uses a **separate, simpler signal**: `N` consecutive clean
-(passed) runs recorded *after* the test entered quarantine, tracked from the
+(passed) runs recorded _after_ the test entered quarantine, tracked from the
 `QuarantineEvent` that quarantined it (see `server/src/quarantine/stateMachine.ts`). The
 flip-rate/confidence score is not consulted at all while a test is quarantined — only the
 clean-run streak decides promotion back to `STABLE`. This makes the two directions

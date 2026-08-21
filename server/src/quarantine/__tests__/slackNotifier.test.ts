@@ -9,10 +9,15 @@ describe('SlackQuarantineNotifier', () => {
   });
 
   it('POSTs a message to the configured webhook URL exactly once', async () => {
-    const fetchMock = jest.spyOn(global, 'fetch').mockResolvedValue(new Response(null, { status: 200 }));
+    const fetchMock = jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValue(new Response(null, { status: 200 }));
 
     const notifier = new SlackQuarantineNotifier('https://hooks.slack.test/abc');
-    await notifier.notifyQuarantined(TEST, 'flakiness detection classified this test as QUARANTINED');
+    await notifier.notifyQuarantined(
+      TEST,
+      'flakiness detection classified this test as QUARANTINED',
+    );
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0];

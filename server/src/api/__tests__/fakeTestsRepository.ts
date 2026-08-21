@@ -1,9 +1,11 @@
 import type { TestDetail, TestListItem, TestsRepository } from '../testsRepository';
 
-export function createFakeTestsRepository(seed: {
-  listByRepo?: Record<string, TestListItem[]>;
-  detailById?: Record<string, TestDetail>;
-} = {}): TestsRepository & { overrides: Array<{ testId: string; status: string; reason: string }> } {
+export function createFakeTestsRepository(
+  seed: {
+    listByRepo?: Record<string, TestListItem[]>;
+    detailById?: Record<string, TestDetail>;
+  } = {},
+): TestsRepository & { overrides: Array<{ testId: string; status: string; reason: string }> } {
   const overrides: Array<{ testId: string; status: string; reason: string }> = [];
 
   return {

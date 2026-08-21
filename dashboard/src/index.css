@@ -1,0 +1,164 @@
+:root {
+  color-scheme: light dark;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+  --color-bg: #0b0f14;
+  --color-surface: #131922;
+  --color-border: #26303c;
+  --color-text: #e6edf3;
+  --color-muted: #8b98a5;
+  --color-stable: #3fb950;
+  --color-flagged: #d29922;
+  --color-quarantined: #f85149;
+  --color-link: #58a6ff;
+}
+
+a {
+  color: var(--color-link);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.app-shell {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.app-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.app-header h1 {
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.app-header nav {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.app-header nav a {
+  color: var(--color-text);
+}
+
+.repo-input {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+  font-size: 0.85rem;
+  color: var(--color-muted);
+}
+
+.repo-input input,
+input[type='password'],
+input[type='text'] {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  border-radius: 4px;
+  padding: 0.35rem 0.5rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.status-badge--stable {
+  background: color-mix(in srgb, var(--color-stable) 20%, transparent);
+  color: var(--color-stable);
+}
+
+.status-badge--flagged {
+  background: color-mix(in srgb, var(--color-flagged) 20%, transparent);
+  color: var(--color-flagged);
+}
+
+.status-badge--quarantined {
+  background: color-mix(in srgb, var(--color-quarantined) 20%, transparent);
+  color: var(--color-quarantined);
+}
+
+.quarantine-list {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.quarantine-list li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+}
+
+.quarantine-list__test {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.quarantine-list__controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.auth-gate {
+  max-width: 360px;
+  margin: 4rem auto;
+  text-align: center;
+}
+
+.auth-gate form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.file-path {
+  color: var(--color-muted);
+  font-family: monospace;
+}

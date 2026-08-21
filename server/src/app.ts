@@ -1,3 +1,4 @@
+import cors from 'cors';
 import express, { type Express } from 'express';
 import pinoHttp from 'pino-http';
 import { logger } from './lib/logger';
@@ -12,6 +13,9 @@ export function createApp(deps: CreateAppDeps): Express {
   const app = express();
 
   app.use(pinoHttp({ logger }));
+  // Permissive CORS: the real access control is the bearer token, not the origin — the
+  // dashboard is a separate dev-server origin from the API in local development.
+  app.use(cors());
   app.use(express.json());
 
   app.get('/health', (_req, res) => {

@@ -136,11 +136,34 @@ Right after every recompute (so, automatically at the end of `npm run ingest` an
 
 All routes require `Authorization: Bearer <DASHBOARD_ACCESS_TOKEN>`.
 
-| Method & path                    | What it does                                            |
-| --------------------------------- | -------------------------------------------------------- |
-| `GET /api/tests?repo=owner/name`  | List tests for a repo with their latest score + quarantine status |
-| `GET /api/tests/:id`              | Full history for one test: runs, score history, quarantine events |
-| `POST /api/tests/:id/quarantine`  | Manual override — body `{ "status": "STABLE"\|"FLAGGED"\|"QUARANTINED", "reason": "..." }` |
+| Method & path                    | What it does                                                                               |
+| -------------------------------- | ------------------------------------------------------------------------------------------ |
+| `GET /api/tests?repo=owner/name` | List tests for a repo with their latest score + quarantine status                          |
+| `GET /api/tests/:id`             | Full history for one test: runs, score history, quarantine events                          |
+| `POST /api/tests/:id/quarantine` | Manual override — body `{ "status": "STABLE"\|"FLAGGED"\|"QUARANTINED", "reason": "..." }` |
+
+## Dashboard
+
+```bash
+npm run dev --workspace dashboard   # http://localhost:5173, talking to the API on :3000
+```
+
+React + Vite + Recharts, gated by a simple token screen (enter your `DASHBOARD_ACCESS_TOKEN`;
+it's stored in `localStorage` and attached as a bearer token on every API request — no
+separate user/auth system per the v1 scope). Set `VITE_API_BASE_URL` if the API isn't on
+`http://localhost:3000` (see `dashboard/.env.example`).
+
+**Overview** — every test for the selected repo, ranked by confidence score:
+
+![Overview page](docs/screenshots/overview.png)
+
+**Test detail** — confidence-score trend, quarantine history, and recent runs for one test:
+
+![Test detail page](docs/screenshots/test-detail.png)
+
+**Quarantine** — currently flagged/quarantined tests, with a manual override control:
+
+![Quarantine page](docs/screenshots/quarantine.png)
 
 ## Testing framework choice
 
