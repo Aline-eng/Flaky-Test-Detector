@@ -1,0 +1,43 @@
+{
+  "name": "@flaky-test-detector/server",
+  "private": true,
+  "version": "0.0.0",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "jest",
+    "ingest": "ts-node src/cli/ingest.ts",
+    "recompute": "ts-node src/cli/recompute.ts",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev"
+  },
+  "dependencies": {
+    "@octokit/plugin-retry": "^7.1.2",
+    "@octokit/plugin-throttling": "^9.3.2",
+    "@octokit/rest": "^21.1.0",
+    "@prisma/client": "^6.3.1",
+    "adm-zip": "^0.5.16",
+    "express": "^4.21.2",
+    "fast-xml-parser": "^4.5.1",
+    "pino": "^9.6.0",
+    "pino-http": "^10.4.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/adm-zip": "^0.5.7",
+    "@types/express": "^5.0.0",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.10.10",
+    "@types/supertest": "^6.0.2",
+    "jest": "^29.7.0",
+    "pino-pretty": "^13.0.0",
+    "prisma": "^6.3.1",
+    "supertest": "^7.0.0",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0"
+  }
+}

@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: flaky
+      POSTGRES_PASSWORD: flaky
+      POSTGRES_DB: flaky_test_detector
+    ports:
+      # Host port 5433 avoids colliding with a locally installed Postgres on 5432.
+      # Container-to-container traffic (the server service) still uses port 5432 internally.
+      - '5433:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U flaky -d flaky_test_detector']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  server:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://flaky:flaky@postgres:5432/flaky_test_detector
+    ports:
+      - '3000:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

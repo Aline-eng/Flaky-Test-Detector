@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint-typecheck-test-build:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: flaky
+          POSTGRES_PASSWORD: flaky
+          POSTGRES_DB: flaky_test_detector
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U flaky -d flaky_test_detector"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://flaky:flaky@localhost:5432/flaky_test_detector
+      GITHUB_TOKEN: ci-placeholder-token
+      DASHBOARD_ACCESS_TOKEN: ci-placeholder-token
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npm run typecheck
+
+      - name: Generate Prisma client
+        run: npm run prisma:generate --workspace server
+
+      - name: Apply Prisma migrations
+        run: npx --workspace server prisma migrate deploy
+
+      - run: npm test
+
+      - run: npm run build
