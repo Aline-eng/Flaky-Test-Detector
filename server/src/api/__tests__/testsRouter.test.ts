@@ -3,7 +3,9 @@ import { createApp } from '../../app';
 import { createFakeTestsRepository } from './fakeTestsRepository';
 import type { TestDetail, TestListItem } from '../testsRepository';
 
-const TOKEN = 'test-dashboard-token'; // matches server/src/test-setup.ts
+// Read from the actual env rather than assuming test-setup.ts's fallback applies: CI sets
+// DASHBOARD_ACCESS_TOKEN at the job level, which takes precedence over the `??=` fallback.
+const TOKEN = process.env.DASHBOARD_ACCESS_TOKEN!;
 
 const LIST_ITEM: TestListItem = {
   id: 'test-1',
