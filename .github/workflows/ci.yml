@@ -39,12 +39,12 @@ jobs:
 
       - run: npm ci
 
+      - name: Generate Prisma client
+        run: npm run prisma:generate --workspace server
+
       - run: npm run lint
 
       - run: npm run typecheck
-
-      - name: Generate Prisma client
-        run: npm run prisma:generate --workspace server
 
       - name: Apply Prisma migrations
         run: npx --workspace server prisma migrate deploy
