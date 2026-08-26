@@ -33,5 +33,19 @@ services:
       postgres:
         condition: service_healthy
 
+  dashboard:
+    build:
+      context: .
+      dockerfile: dashboard/Dockerfile
+      args:
+        # Baked in at build time (Vite inlines env vars) -- must be the browser-reachable
+        # host-published API port, not the Docker-internal "server" hostname.
+        VITE_API_BASE_URL: http://localhost:3000
+    restart: unless-stopped
+    ports:
+      - '5173:4173'
+    depends_on:
+      - server
+
 volumes:
   postgres_data:

@@ -13,10 +13,37 @@ against it runs in job-level fallback mode; the per-test JUnit XML parser is imp
 unit-tested against fixtures (see Sprint 1) even though this particular repo doesn't exercise
 that path live.
 
+## Before / after
+
+**Before:** the only way to tell a genuinely broken job from a flaky one in a repo with
+dozens of jobs across 30+ workflow files is to manually scroll each job's run history in the
+GitHub UI, one job at a time, and eyeball whether its failures look intermittent.
+
+**After**, one command (`npm run ingest -- --repo typeorm/typeorm --max-runs 60`) against the
+real `typeorm/typeorm` repo produced:
+
+- **45** workflow runs and **341** job-level results ingested, covering **52** distinct
+  tracked tests/jobs, in under two minutes.
+- Two tests correctly identified **without any staged data** — genuinely flaky by this
+  project's own definition, not hand-picked: the `coverage` job (PASSED → FAILED → PASSED →
+  FAILED → ERRORED → ERRORED → SKIPPED across its real recent runs, an 83% flip rate) was
+  quarantined, and `all-passed` (57% flip rate) was flagged. See the confidence-score trend
+  and full run history in [`docs/screenshots/test-detail.png`](docs/screenshots/test-detail.png).
+- A concrete demonstration of why this project scores flip-rate with a confidence interval
+  instead of a raw failure-rate threshold (ADR 0001): several jobs with only 2-3 runs each
+  crossed the _raw_ quarantine threshold (confidence score 0.34-0.44) on pure percentage —
+  e.g. `tests-linux (24) / spanner` failed 2 of 3 runs (~67%). A naive threshold would flag
+  all of them immediately. This engine's Wilson-lower-bound score correctly held every one of
+  them at `STABLE`, because that few runs (`FLAKINESS_MIN_RUNS`, default 6) is nowhere near
+  enough evidence — exactly the false-positive class this project exists to avoid.
+- All of it queryable via the REST API and visible in the dashboard immediately —
+  see [`docs/screenshots/`](docs/screenshots/) below.
+
 ## Status
 
-Under active development, sprint by sprint. See the sprint plan this project was built from
-for scope.
+Feature-complete per the v1 spec: ingestion, detection, quarantine + Slack, REST API,
+dashboard, and GitHub Action packaging are all implemented, tested, and verified end-to-end
+against real `typeorm/typeorm` data (see "Before / after" above).
 
 ## Architecture
 
@@ -41,6 +68,8 @@ GitHub Actions API ──▶ Ingestion Adapter ──▶ Postgres (Prisma) ─�
 - **Quarantine system** (`server/src/quarantine`) — `stable → flagged → quarantined → stable`
   state machine with one Slack notification per transition.
 - **Dashboard** (`dashboard/`) — React + Vite + Recharts.
+- **GitHub Action** (`action/`) — the ingest/detect/quarantine pipeline packaged for reuse in
+  any repo's own CI. See "Using this as a GitHub Action" below.
 
 ## Repo layout
 
@@ -56,8 +85,14 @@ Prerequisites: Node.js 22+, Docker.
 ```bash
 cp .env.example .env
 # fill in GITHUB_TOKEN, DASHBOARD_ACCESS_TOKEN (and optionally SLACK_WEBHOOK_URL) in .env
-docker-compose up
+docker-compose up -d
+# migrations run automatically on server startup; this populates the database once
+# (the runtime image is lean and has no root package.json, so call the compiled CLI directly):
+docker-compose run --rm server node server/dist/cli/ingest.js --repo typeorm/typeorm --max-runs 60
 ```
+
+Then open the dashboard at http://localhost:5173 and sign in with your `DASHBOARD_ACCESS_TOKEN`.
+The API is on http://localhost:3000.
 
 For local development without Docker for the app itself:
 
@@ -81,9 +116,11 @@ port. `.env.example`'s `DATABASE_URL` already points at 5433.
 | `npm run lint`                                       | ESLint across the whole repo                                  |
 | `npm run typecheck`                                  | TypeScript project checks for both workspaces                 |
 | `npm test`                                           | Jest (server) + Vitest (dashboard)                            |
+| `npm run test:coverage`                              | Same, with a coverage report                                  |
 | `npm run build`                                      | Production builds for both workspaces                         |
 | `npm run ingest -- --repo owner/name`                | Ingest CI history for a GitHub repo                           |
 | `npm run ingest -- --repo owner/name --max-runs 300` | Same, capped to the N most recent workflow runs (default 300) |
+| `npm run recompute -- --repo owner/name`             | Re-score flakiness + re-evaluate quarantine without ingesting |
 
 ## Ingestion
 
@@ -164,6 +201,44 @@ separate user/auth system per the v1 scope). Set `VITE_API_BASE_URL` if the API 
 **Quarantine** — currently flagged/quarantined tests, with a manual override control:
 
 ![Quarantine page](docs/screenshots/quarantine.png)
+
+## Using this as a GitHub Action
+
+The ingest → recompute → quarantine pipeline is also packaged as a standalone Docker-based
+GitHub Action (`action/`), reusable in **any** repo's own CI, not just this one:
+
+```yaml
+- uses: aline-eng/Flaky-Test-Detector/action@main
+  with:
+    database-url: ${{ secrets.FLAKY_DB_URL }} # any reachable Postgres
+    max-runs: '100'
+    slack-webhook-url: ${{ secrets.SLACK_WEBHOOK_URL }} # optional
+```
+
+`repo` and `github-token` default to the calling repo and `${{ github.token }}`, so most
+callers only need to provide `database-url`. The action writes a job summary listing
+quarantined tests and exposes `quarantined-count` / `flagged-count` outputs.
+
+The action references a pre-built image (`ghcr.io/aline-eng/flaky-test-detector-action`)
+rather than building on every run, because a Docker action's automatic build uses the
+action's own directory as build context, which can't reach the rest of this monorepo. The
+image is built and published by
+[`.github/workflows/publish-action-image.yml`](.github/workflows/publish-action-image.yml) on
+every push to `main` that touches `action/` or `server/` — so the tag only exists after this
+repo's own CI has run at least once on GitHub.
+
+## Test coverage
+
+```bash
+npm run test:coverage
+```
+
+Current coverage (`server`: Jest, `dashboard`: Vitest, both v8 coverage):
+
+| Workspace   | Statements | What's covered / not                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ----------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `server`    | ~60%       | Pure logic and orchestration (Wilson score, flip-rate, quarantine state machine, ingestion adapter) are covered directly and heavily (84-100% each). Thin Prisma passthrough wrappers (`prismaRecomputeStore`, `prismaQuarantineStore`, `testsRepository`) and CLI entrypoints are exercised via the real end-to-end runs documented above and in-browser (see Dashboard), not unit tests — see the individual module `%` in a fresh `npm run test:coverage --workspace server` run. |
+| `dashboard` | ~89%       | All three pages and every shared component.                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 
 ## Testing framework choice
 

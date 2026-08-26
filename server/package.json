@@ -9,6 +9,7 @@
     "start": "node dist/index.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "jest",
+    "test:coverage": "jest --coverage",
     "ingest": "ts-node src/cli/ingest.ts",
     "recompute": "ts-node src/cli/recompute.ts",
     "prisma:generate": "prisma generate",

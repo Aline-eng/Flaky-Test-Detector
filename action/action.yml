@@ -1,0 +1,53 @@
+name: 'Flaky Test Detector'
+description: >-
+  Ingests a repo's GitHub Actions test history, scores flakiness with flip-rate + Wilson
+  score confidence intervals, and applies quarantine transitions.
+author: 'Flaky Test Detector'
+branding:
+  icon: 'activity'
+  color: 'red'
+
+inputs:
+  repo:
+    description: 'owner/name of the repo to analyze. Defaults to the repo running this action.'
+    required: false
+    default: ${{ github.repository }}
+  github-token:
+    description: 'Token with read access to Actions runs/jobs/artifacts for `repo`.'
+    required: false
+    default: ${{ github.token }}
+  database-url:
+    description: 'Postgres connection string used to store ingested history and scores.'
+    required: true
+  max-runs:
+    description: 'Max most-recent workflow runs to ingest on this invocation.'
+    required: false
+    default: '100'
+  slack-webhook-url:
+    description: 'Optional Slack incoming webhook for quarantine notifications.'
+    required: false
+    default: ''
+
+outputs:
+  quarantined-count:
+    description: 'Number of tests quarantined after this run.'
+  flagged-count:
+    description: 'Number of tests flagged after this run.'
+
+runs:
+  using: 'docker'
+  # A pre-built, published image, not `image: 'Dockerfile'` -- GitHub builds a same-directory
+  # Dockerfile with the action's own folder as build context, which can't reach the rest of
+  # this monorepo (server/, root package.json/lockfile). The image is built and pushed by
+  # .github/workflows/publish-action-image.yml, which builds from the repo root instead.
+  image: 'docker://ghcr.io/aline-eng/flaky-test-detector-action:latest'
+  env:
+    GITHUB_TOKEN: ${{ inputs.github-token }}
+    DATABASE_URL: ${{ inputs.database-url }}
+    SLACK_WEBHOOK_URL: ${{ inputs.slack-webhook-url }}
+    # Only the ingestion/detection/quarantine pipeline runs in this context, not the
+    # dashboard API -- this satisfies the app's required env config without meaning anything.
+    DASHBOARD_ACCESS_TOKEN: 'unused-outside-the-dashboard-api'
+  args:
+    - ${{ inputs.repo }}
+    - ${{ inputs.max-runs }}
